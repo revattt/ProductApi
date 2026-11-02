@@ -9,6 +9,12 @@ namespace ProductApi.Interfaces
         Task AddAsync (Product product);
         void Delete(Product product);
         Task SaveChangesAsync();
+        Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(
+    int page,
+    int pageSize,
+    string? search,
+    string? sortBy,
+    bool descending);
 
     }
 }

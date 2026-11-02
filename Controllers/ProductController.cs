@@ -2,6 +2,7 @@
 /// Provides API endpoints for managing products.
 /// </summary>
 
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductApi.Data;
@@ -23,11 +24,34 @@ namespace ProductApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        public async Task<ActionResult<PagedResultDto<Product>>> GetProducts(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 1,
+            [FromQuery] string? search = null,
+            [FromQuery] string? sortBy = null,
+            [FromQuery] bool descending = false)
         {
-            var products = await _productService.GetProductsAsync();
-            return Ok(products);
+            if (page < 1)
+            {
+                return BadRequest("Page must be at least 1.");
+            }
+
+            if (pageSize < 1 || pageSize > 100)
+            {
+                return BadRequest("Page size must be between 1 and 100.");
+            }
+
+            var result = await _productService.GetPagedProductsAsync(
+                page,
+                pageSize,
+                search,
+                sortBy,
+                descending);
+
+            return Ok(result);
         }
+        
+        
 
         [HttpPost]
         public async Task<ActionResult<Product>> CreateProduct(CreateProductDto dto)
@@ -72,6 +96,8 @@ namespace ProductApi.Controllers
             }
             return NoContent();
         }
+
+
     }
 }
 

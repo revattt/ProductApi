@@ -1,4 +1,5 @@
 ﻿using ProductApi.Dtos;
+using ProductApi.Models;
 using ProductApi.Entities;
 
 namespace ProductApi.Interfaces
@@ -10,5 +11,12 @@ namespace ProductApi.Interfaces
         Task<Product> CreateProductAsync(CreateProductDto dto);
         Task<bool> UpdateProductAsync(int id, UpdateProductDto dto);
         Task<bool> DeleteProductAsync(int id);
+        Task<PagedResultDto<Product>> GetPagedProductsAsync(
+            int page,
+            int pageSize,
+            string? search,
+            string? sortBy,
+            bool descending
+            );
     }
 }

@@ -13,5 +13,8 @@ namespace ProductApi.Dtos
         public decimal Price { get; set; }
         [Range(0, 10000)]
         public int Stock { get; set; }
+        [Required]
+        [Range(1, int.MaxValue)]
+        public int CategoryId { get; set; }
     }
 }

@@ -20,6 +20,7 @@ namespace ProductApi.Services
                 Name = dto.Name,
                 Description = dto.Description,
                 Price = dto.Price,
+                CategoryId = dto.CategoryId,
                 Stock = dto.Stock,
             };
             await _repository.AddAsync(product);
@@ -37,6 +38,39 @@ namespace ProductApi.Services
             _repository.Delete(product);
             await _repository.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<PagedResultDto<Product>> GetPagedProductsAsync(
+            int page, 
+            int pageSize, 
+            string? search, 
+            string? sortBy, 
+            bool descending)
+        {
+            if(page < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(pageSize), "Page must be greater than 1");
+            }
+            if(pageSize < 1 || pageSize > 100)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(pageSize), "Page size must be between 1 and 100");
+            }
+            var (items, totalCount) = await _repository.GetPagedAsync(
+                page,
+                pageSize,
+                search,
+                sortBy,
+                descending
+                );
+            return new PagedResultDto<Product>
+            {
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
         }
 
         public async Task<Product?> GetProductByIdAsync(int id)
