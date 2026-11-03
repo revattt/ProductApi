@@ -24,7 +24,7 @@ namespace ProductApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<PagedResultDto<Product>>> GetProducts(
+        public async Task<ActionResult<PagedResultDto<ProductResponseDto>>> GetProducts(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 1,
             [FromQuery] string? search = null,
@@ -54,18 +54,26 @@ namespace ProductApi.Controllers
         
 
         [HttpPost]
-        public async Task<ActionResult<Product>> CreateProduct(CreateProductDto dto)
+        public async Task<ActionResult<ProductResponseDto>> CreateProduct(CreateProductDto dto)
         {
-            var product = await _productService.CreateProductAsync(dto);
-            return CreatedAtAction(
-                nameof(GetProduct),
-                new { id = product.Id },
-                product
-            );
+            try
+            {
+                var product = await _productService.CreateProductAsync(dto);
+                return CreatedAtAction(
+                    nameof(GetProduct),
+                    new { id = product.Id },
+                    product
+                );
+            }
+            catch(ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+        public async Task<ActionResult<ProductResponseDto>> GetProduct(int id)
         {
             var product = await _productService.GetProductByIdAsync(id);
             if (product == null)
@@ -76,14 +84,22 @@ namespace ProductApi.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, UpdateProductDto dto)
+        public async Task<ActionResult<ProductResponseDto>> UpdateProduct(int id, UpdateProductDto dto)
         {
-            var success = await _productService.UpdateProductAsync(id, dto);
-            if (!success)
+            try
             {
-                return NotFound();
+                var product = await _productService.UpdateProductAsync(id, dto);
+                if (product == null)
+                {
+                    return NotFound();
+                }
+                return Ok(product);
             }
-            return NoContent();
+            catch(ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+
         }
 
         [HttpDelete("{id}")]

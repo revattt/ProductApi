@@ -9,12 +9,31 @@ namespace ProductApi.Services
     public class ProductService : IProductService
     {
         private readonly IProductRepository _repository;
-        public ProductService(IProductRepository repository)
+        private readonly ICategoryRepository _categoryRepository;
+
+        private ProductResponseDto MapToDto(Product product)
+        {
+            return new ProductResponseDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Stock = product.Stock,
+                CreatedAt = product.CreatedAt,
+                CategoryId = product.CategoryId,
+                CategoryName = product.Category?.Name ?? "Unknown"
+            };
+        }
+        public ProductService(IProductRepository repository, ICategoryRepository categoryRepository)
         {
             _repository = repository;
+            _categoryRepository = categoryRepository;
         }
-        public async Task<Product> CreateProductAsync(CreateProductDto dto)
+        public async Task<ProductResponseDto> CreateProductAsync(CreateProductDto dto)
         {
+            bool categoryExists = await _categoryRepository.ExistsAsync(dto.CategoryId);
+            if (!categoryExists) { throw new ArgumentException($"Category with ID {dto.CategoryId} does not exist."); }
             var product = new Product
             {
                 Name = dto.Name,
@@ -22,10 +41,12 @@ namespace ProductApi.Services
                 Price = dto.Price,
                 CategoryId = dto.CategoryId,
                 Stock = dto.Stock,
+                CreatedAt = DateTime.UtcNow
             };
             await _repository.AddAsync(product);
             await _repository.SaveChangesAsync();
-            return product;
+            var savedProduct = await _repository.GetByIdAsync(product.Id);
+            return MapToDto(savedProduct!);
         }
 
         public async Task<bool> DeleteProductAsync(int id)
@@ -40,63 +61,72 @@ namespace ProductApi.Services
             return true;
         }
 
-        public async Task<PagedResultDto<Product>> GetPagedProductsAsync(
-            int page, 
-            int pageSize, 
-            string? search, 
-            string? sortBy, 
-            bool descending)
+        public async Task<PagedResultDto<ProductResponseDto>> GetPagedProductsAsync(
+    int page,
+    int pageSize,
+    string? search,
+    string? sortBy,
+    bool descending)
         {
-            if(page < 1)
+            if (page < 1)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(pageSize), "Page must be greater than 1");
+                    nameof(page), "Page must be at least 1.");
             }
-            if(pageSize < 1 || pageSize > 100)
+
+            if (pageSize < 1 || pageSize > 100)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(pageSize), "Page size must be between 1 and 100");
+                    nameof(pageSize), "Page size must be between 1 and 100.");
             }
+
             var (items, totalCount) = await _repository.GetPagedAsync(
                 page,
                 pageSize,
                 search,
                 sortBy,
                 descending
-                );
-            return new PagedResultDto<Product>
+            );
+
+            return new PagedResultDto<ProductResponseDto>
             {
-                Items = items,
+                Items = items.Select(MapToDto),
                 Page = page,
                 PageSize = pageSize,
                 TotalCount = totalCount
             };
         }
 
-        public async Task<Product?> GetProductByIdAsync(int id)
+        public async Task<ProductResponseDto?> GetProductByIdAsync(int id)
         {
-            return await _repository.GetByIdAsync(id);
+            var product = await _repository.GetByIdAsync(id);
+            if(product == null) { return null; }
+            return MapToDto(product);
         }
 
-        public async Task<IEnumerable<Product>> GetProductsAsync()
+        public async Task<IEnumerable<ProductResponseDto>> GetProductsAsync()
         {
-            return await _repository.GetAllAsync();
+            var products = await _repository.GetAllAsync();
+            return products.Select(MapToDto);
         }
 
-        public async Task<bool> UpdateProductAsync(int id, UpdateProductDto dto)
+        public async Task<ProductResponseDto> UpdateProductAsync(int id, UpdateProductDto dto)
         {
             var product = await _repository.GetByIdAsync(id);
             if (product == null)
             {
-                return false;
+                return null!;
             }
+            bool categoryExists = await _categoryRepository.ExistsAsync(dto.CategoryId);
+            if (!categoryExists) { throw new ArgumentException($"Category with ID {dto.CategoryId} does not exist."); }
             product.Name = dto.Name;
             product.Description = dto.Description;
             product.Price = dto.Price;
             product.Stock = dto.Stock;
+            product.CategoryId = dto.CategoryId;
 
             await _repository.SaveChangesAsync();
-            return true;
+            return MapToDto(product);
         }
     }
 }

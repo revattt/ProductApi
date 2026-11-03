@@ -6,12 +6,12 @@ namespace ProductApi.Interfaces
 {
     public interface IProductService
     {
-        Task<IEnumerable<Product>> GetProductsAsync();
-        Task<Product?> GetProductByIdAsync(int id);
-        Task<Product> CreateProductAsync(CreateProductDto dto);
-        Task<bool> UpdateProductAsync(int id, UpdateProductDto dto);
+        Task<IEnumerable<ProductResponseDto>> GetProductsAsync();
+        Task<ProductResponseDto?> GetProductByIdAsync(int id);
+        Task<ProductResponseDto> CreateProductAsync(CreateProductDto dto);
+        Task<ProductResponseDto> UpdateProductAsync(int id, UpdateProductDto dto);
         Task<bool> DeleteProductAsync(int id);
-        Task<PagedResultDto<Product>> GetPagedProductsAsync(
+        Task<PagedResultDto<ProductResponseDto>> GetPagedProductsAsync(
             int page,
             int pageSize,
             string? search,

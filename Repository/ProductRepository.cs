@@ -16,6 +16,7 @@ namespace ProductApi.Repository
         public async Task<IEnumerable<Product>> GetAllAsync()
         {
             return await _context.Products
+                .Include(p => p.Category)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -23,6 +24,7 @@ namespace ProductApi.Repository
         public async Task<Product?> GetByIdAsync(int id)
         {
             return await _context.Products
+                .Include(p => p.Category)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
@@ -48,10 +50,15 @@ namespace ProductApi.Repository
             bool descending
             )
         {
-            IQueryable<Product> query = _context.Products.AsNoTracking();
+            IQueryable<Product> query = _context.Products
+                .Include(p => p.Category)
+                .AsNoTracking();
             if(!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(p => p.Name.Contains(search));
+                query = query.Where(p => 
+                p.Name.Contains(search) ||
+                p.Description.Contains(search)
+                );
             }
             int totalCount = await query.CountAsync();
             query = sortBy?.ToLowerInvariant() switch
